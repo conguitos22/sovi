@@ -86,8 +86,8 @@ app.use(express.json({ limit: '3mb' }));
 
 const wrap = fn => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: 'Erro interno' }); });
 const fail = (res, e) => { console.error(e); return res.status(500).json({ error: 'Erro no banco de dados' }); };
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' } });
-const orderLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitos pedidos em pouco tempo. Aguarde alguns minutos.' } });
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, validate: false, message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' } });
+const orderLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false, validate: false, message: { error: 'Muitos pedidos em pouco tempo. Aguarde alguns minutos.' } });
 
 /* ---------- helpers ---------- */
 const CATS = ['Chronograph', 'Classic', 'Sport', 'Diver', 'Racing', 'Premium'];
@@ -247,6 +247,8 @@ app.delete('/api/products/:id', requireAdmin, wrap(async (req, res) => {
 }));
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Rota não encontrada' }));
+// Qualquer erro que escape das rotas (ex: middleware) ainda volta como JSON, nunca a página de erro padrão da Vercel
+app.use((err, _req, res, _next) => { console.error('Erro não tratado:', err); res.status(500).json({ error: 'Erro interno' }); });
 app.use(express.static(path.join(__dirname, 'public')));
 
 module.exports = app;
